@@ -1,0 +1,23 @@
+{
+  "name": "test_signet_cli",
+  "version": "0.3.6",
+  "description": "exploring releasing the cli as an npm package",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "node postinstall.js install",
+    "preuninstall": "node postinstall.js uninstall"
+  },
+  "author": "",
+  "license": "ISC",
+  "goBinary": {
+    "name": "broker_cli",
+    "path": "./bin"
+  },
+  "files": [
+    "dist",
+    "postinstall.js"
+  ],
+  "dependencies": {
+    "mkdirp": "^1.0.4"
+  }
+}
