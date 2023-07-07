@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
 "use strict";
+
+console.log('THIS IS FROM postinstall.js RUNNING!');
+
 // Thanks to author of https://github.com/sanathkr/go-npm, we were able to modify his code to work with private packages
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
@@ -28,11 +31,11 @@ async function getInstallationPath() {
 
     // `npm bin` will output the path where binary files should be installed
 
-    const value = await execShellCommand("npm bin -g");
+    const npmBinDir = await execShellCommand("npm bin -g");
 
 
         var dir = null;
-        if (!value || value.length === 0) {
+        if (!npmBinDir || npmBinDir.length === 0) {
 
             // We couldn't infer path from `npm bin`. Let's try to get it from
             // Environment variables set by NPM when it runs.
@@ -43,7 +46,7 @@ async function getInstallationPath() {
                 dir = path.join(env.npm_config_prefix, "bin");
             }
         } else {
-            dir = value.trim();
+            dir = npmBinDir.trim();
         }
 
         await mkdirp(dir);

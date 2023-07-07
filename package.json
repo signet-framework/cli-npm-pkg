@@ -1,6 +1,6 @@
 {
   "name": "test_signet_cli",
-  "version": "0.3.6",
+  "version": "0.3.10",
   "description": "exploring releasing the cli as an npm package",
   "main": "index.js",
   "scripts": {
@@ -15,9 +15,11 @@
   },
   "files": [
     "dist",
-    "postinstall.js"
+    "postinstall.js",
+    "signet_dependency.js"
   ],
   "dependencies": {
-    "mkdirp": "^1.0.4"
+    "mkdirp": "^1.0.4",
+    "dredd": "^14.1.0"
   }
 }
