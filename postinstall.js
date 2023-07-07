@@ -2,9 +2,16 @@
 
 "use strict";
 
-console.log('THIS IS FROM postinstall.js RUNNING!');
+/*
 
-// Thanks to author of https://github.com/sanathkr/go-npm, we were able to modify his code to work with private packages
+This program is adapted from two open source repositories:
+- https://github.com/sanathkr/go-npm
+- https://gist.github.com/utkarsha2016/c1326b824b4beb840a37149af3e23109#file-postinstall-js
+
+The Signet team modified this program to add support for GOARCH=arm64 golang binaries.
+
+*/
+
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var path = require('path'),

@@ -1,22 +1,20 @@
 {
-  "name": "test_signet_cli",
-  "version": "0.3.10",
-  "description": "exploring releasing the cli as an npm package",
-  "main": "index.js",
+  "name": "signet-cli",
+  "version": "0.3.11",
+  "description": "The command line interface for the Signet contract testing framework.",
   "scripts": {
     "postinstall": "node postinstall.js install",
     "preuninstall": "node postinstall.js uninstall"
   },
-  "author": "",
+  "author": "Signet",
   "license": "ISC",
   "goBinary": {
-    "name": "broker_cli",
+    "name": "signet",
     "path": "./bin"
   },
   "files": [
     "dist",
-    "postinstall.js",
-    "signet_dependency.js"
+    "postinstall.js"
   ],
   "dependencies": {
     "mkdirp": "^1.0.4",
