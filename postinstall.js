@@ -34,6 +34,8 @@ var PLATFORM_MAPPING = {
     "freebsd": "freebsd"
 };
 
+var CURRENT_RELEASE_NAME = "broker_cli"
+
 async function getInstallationPath() {
 
     // `npm bin` will output the path where binary files should be installed
@@ -66,7 +68,7 @@ async function verifyAndPlaceBinary(binName, binPath, callback) {
     // Get installation path for executables under node
     const installationPath=  await getInstallationPath();
     // Copy the executable to the path
-    fs.rename(path.join(binPath, binName), path.join(installationPath, binName),(err)=>{
+    fs.rename(path.join(binPath, binName), path.join(installationPath, binName), (err)=>{
         if(!err){
             console.info("Installed cli successfully");
             callback(null);
@@ -153,7 +155,9 @@ async function install(callback) {
     if (!opts) return callback(INVALID_INPUT);
     mkdirp.sync(opts.binPath);
     console.info(`Copying the relevant binary for your platform ${process.platform}`);
-    const src= `./dist/broker_cli_${process.platform}_${ARCH_MAPPING[process.arch]}/${opts.binName}`;
+    // const src= `./dist/broker_cli_${process.platform}_${ARCH_MAPPING[process.arch]}/${opts.binName}`;
+    const src= `./dist/${CURRENT_RELEASE_NAME}_${process.platform}_${ARCH_MAPPING[process.arch]}/${CURRENT_RELEASE_NAME}`;
+
     await execShellCommand(`cp ${src} ${opts.binPath}/${opts.binName}`);
     await verifyAndPlaceBinary(opts.binName, opts.binPath, callback);
 }
