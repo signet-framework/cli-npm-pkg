@@ -18,7 +18,8 @@
     "specs"
   ],
   "dependencies": {
+    "dredd": "^14.1.0",
     "mkdirp": "^1.0.4",
-    "dredd": "^14.1.0"
+    "mountebank": "^2.8.2"
   }
 }
