@@ -166,7 +166,9 @@ async function uninstall(callback) {
     var opts = parsePackageJson();
         try {
             const installationPath = await getInstallationPath();
-            fs.unlink(path.join(installationPath, opts.binName),(err)=>{
+            console.log("INSTALLATION PATH: ", installationPath)
+            console.log("JOIN: ", path.join(installationPath, opts.binName))
+            fs.unlink(path.join(installationPath, opts.binName), (err) => {
                 if(err){
                     return callback(err);
                 }
