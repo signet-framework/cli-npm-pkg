@@ -21,7 +21,7 @@ var path = require('path'),
 // Mapping from Node's `process.arch` to Golang's `$GOARCH`
 var ARCH_MAPPING = {
     "ia32": "386",
-    "x64": "amd64",
+    "x64": "amd64_v1",
     "arm": "arm",
     "arm64": "arm64",
 };
