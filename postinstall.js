@@ -34,7 +34,7 @@ var PLATFORM_MAPPING = {
     "freebsd": "freebsd"
 };
 
-var CURRENT_RELEASE_NAME = "broker_cli"
+var CURRENT_RELEASE_NAME = "signet-cli"
 
 async function getInstallationPath() {
 
@@ -155,7 +155,6 @@ async function install(callback) {
     if (!opts) return callback(INVALID_INPUT);
     mkdirp.sync(opts.binPath);
     console.info(`Copying the relevant binary for your platform ${process.platform}`);
-    // const src= `./dist/broker_cli_${process.platform}_${ARCH_MAPPING[process.arch]}/${opts.binName}`;
     const src= `./dist/${CURRENT_RELEASE_NAME}_${process.platform}_${ARCH_MAPPING[process.arch]}/${CURRENT_RELEASE_NAME}`;
 
     await execShellCommand(`cp ${src} ${opts.binPath}/${opts.binName}`);

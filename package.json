@@ -1,6 +1,6 @@
 {
   "name": "signet-cli",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "The command line interface for the Signet contract testing framework.",
   "scripts": {
     "postinstall": "node postinstall.js install",
