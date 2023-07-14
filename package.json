@@ -17,7 +17,8 @@
     "postinstall.js",
     "specs",
     "mbdata",
-    "docker-compose.yml"
+    "docker-compose.yml",
+    "cftemplate.yaml"
   ],
   "dependencies": {
     "dredd": "^14.1.0",
