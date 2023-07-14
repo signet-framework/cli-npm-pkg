@@ -171,7 +171,7 @@ Resources:
               Value: postgres
           Essential: true
           Image: >-
-            docker.io/signetframework/signet-broker:latest@sha256:67f88f8d206880f6dbe6f792bf0f6234776400964b1392157f10ec9dd78203ff
+            docker.io/signetframework/signet-broker:latest
           LinuxParameters: {}
           LogConfiguration:
             LogDriver: awslogs
@@ -325,7 +325,7 @@ Resources:
               - CMD-SHELL
               - psql postgres --command "select 1" -U postgres
           Image: >-
-            docker.io/signetframework/signet-db:latest@sha256:67bc10fb6457ea2e145d1f9213fe4348c29a630183205fc072b125e73e954a51
+            docker.io/signetframework/signet-db:latest
           LinuxParameters: {}
           LogConfiguration:
             LogDriver: awslogs
