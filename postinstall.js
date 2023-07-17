@@ -40,8 +40,7 @@ async function getInstallationPath() {
 
     // `npm bin` will output the path where binary files should be installed
 
-    const npmBinDir = await execShellCommand("npm bin -g");
-
+    const npmBinDir = await execShellCommand("npm prefix -g");
 
         var dir = null;
         if (!npmBinDir || npmBinDir.length === 0) {
@@ -55,7 +54,7 @@ async function getInstallationPath() {
                 dir = path.join(env.npm_config_prefix, "bin");
             }
         } else {
-            dir = npmBinDir.trim();
+            dir = npmBinDir.trim() + "/bin";
         }
 
         await mkdirp(dir);
