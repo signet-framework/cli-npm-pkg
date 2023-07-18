@@ -1,4 +1,8 @@
 AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  Region:
+    Type: String
+    Default: us-east-1
 Resources:
   Appnetwork3001Ingress:
     Properties:
@@ -10,19 +14,59 @@ Resources:
       IpProtocol: TCP
       ToPort: 3001
     Type: 'AWS::EC2::SecurityGroupIngress'
+  SignetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+  VPCRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: 
+        Ref: SignetVPC
+  SignetGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId:
+        Ref: SignetGateway
+      VpcId:
+        Ref: SignetVPC
+  SignetGatewayRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn:
+      - SignetGatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        Ref: VPCRouteTable
+      GatewayId:
+        Ref: SignetGateway
+  SignetSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VPCRouteTable
+      SubnetId:
+        Ref: SignetSubnetA
+  SignetVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+  SignetSubnetA:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId:
+        Ref: SignetVPC
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      CidrBlock: 10.0.0.10/24
+      MapPublicIpOnLaunch: true
+    DependsOn:
+      - SignetVPC
   AppnetworkNetwork:
     Properties:
       GroupDescription: signetbroker Security Group for app-network network
-      Tags:
-        - Key: com.docker.compose.project
-          Value: signetbroker
-        - Key: com.docker.compose.network
-          Value: signetbroker_app-network
-      VpcId: vpc-0bb6607652fc64330
+      VpcId:
+        Ref: SignetVPC
     Type: 'AWS::EC2::SecurityGroup'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: b31e0043-cc41-4eab-b389-7fb9ebd3bee7
   AppnetworkNetworkIngress:
     Properties:
       Description: Allow communication within network app-network
@@ -32,9 +76,6 @@ Resources:
       SourceSecurityGroupId:
         Ref: AppnetworkNetwork
     Type: 'AWS::EC2::SecurityGroupIngress'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 638b6003-8ee1-48ca-a4aa-1b196a600515
   BrokerService:
     DependsOn:
       - BrokerTCP80Listener
@@ -62,7 +103,7 @@ Resources:
           SecurityGroups:
             - Ref: AppnetworkNetwork
           Subnets:
-            - subnet-08598e3e6a37dc941
+            - Ref: SignetSubnetA
       PlatformVersion: 1.4.0
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
@@ -71,17 +112,9 @@ Resources:
             'Fn::GetAtt':
               - BrokerServiceDiscoveryEntry
               - Arn
-      Tags:
-        - Key: com.docker.compose.project
-          Value: signetbroker
-        - Key: com.docker.compose.service
-          Value: broker
       TaskDefinition:
         Ref: BrokerTaskDefinition
     Type: 'AWS::ECS::Service'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 95dc3a98-62cf-45cf-b3c3-66d9302ebac8
   BrokerServiceDiscoveryEntry:
     Properties:
       Description: '"broker" service discovery entry in Cloud Map'
@@ -96,9 +129,6 @@ Resources:
       NamespaceId:
         Ref: CloudMap
     Type: 'AWS::ServiceDiscovery::Service'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 698c2a18-e0f4-4c77-b60c-1f13fee84a97
   BrokerTCP80Listener:
     Properties:
       DefaultActions:
@@ -112,27 +142,18 @@ Resources:
       Port: 80
       Protocol: TCP
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 83f7f880-463d-46f0-823d-9ef8db8b691b
   BrokerTCP80TargetGroup:
     Properties:
       Port: 3001
       Protocol: TCP
-      Tags:
-        - Key: com.docker.compose.project
-          Value: signetbroker
       TargetType: ip
-      VpcId: vpc-0bb6607652fc64330
+      VpcId:
+        Ref: SignetVPC
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 372a6f6a-c159-433e-8e4d-46ad6a54662d
   BrokerTaskDefinition:
     Properties:
       ContainerDefinitions:
         - Command:
-            - us-east-1.compute.internal
             - signetbroker.local
           Essential: false
           Image: 'docker/ecs-searchdomain-sidecar:1.0'
@@ -196,9 +217,6 @@ Resources:
       RequiresCompatibilities:
         - FARGATE
     Type: 'AWS::ECS::TaskDefinition'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 240fe9ec-2cd4-464f-8004-093f2acd41af
   BrokerTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -213,37 +231,21 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
         - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly'
-      Tags:
-        - Key: com.docker.compose.project
-          Value: signetbroker
-        - Key: com.docker.compose.service
-          Value: broker
     Type: 'AWS::IAM::Role'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 6ca4c788-19d2-47f6-9e0e-c5fd3b617072
   CloudMap:
     Properties:
-      Description: Service Map for Docker Compose project signetbroker
+      Description: Private DNS namespace for signetbroker
       Name: signetbroker.local
-      Vpc: vpc-0bb6607652fc64330
+      Vpc:
+        Ref: SignetVPC
     Type: 'AWS::ServiceDiscovery::PrivateDnsNamespace'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 27e9bb23-da4e-49cc-a101-cef5ab7d183c
   Cluster:
     Properties:
       ClusterName: signetbroker
-      Tags:
-        - Key: com.docker.compose.project
-          Value: signetbroker
     Type: 'AWS::ECS::Cluster'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 3727ca55-6c54-4585-aacc-3af91469aaec
   DbService:
     DependsOn:
-      - DbdataNFSMountTargetOnSubnet08598e3e6a37dc941
+      - DbdataNFSMountTargetOnSignetSubnetA
     Properties:
       Cluster:
         'Fn::GetAtt':
@@ -262,7 +264,7 @@ Resources:
           SecurityGroups:
             - Ref: AppnetworkNetwork
           Subnets:
-            - subnet-08598e3e6a37dc941
+            - Ref: SignetSubnetA
       PlatformVersion: 1.4.0
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
@@ -271,17 +273,9 @@ Resources:
             'Fn::GetAtt':
               - DbServiceDiscoveryEntry
               - Arn
-      Tags:
-        - Key: com.docker.compose.project
-          Value: signetbroker
-        - Key: com.docker.compose.service
-          Value: db
       TaskDefinition:
         Ref: DbTaskDefinition
     Type: 'AWS::ECS::Service'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 49ebf349-6b1f-4bb1-82a2-5a147d5c16e4
   DbServiceDiscoveryEntry:
     Properties:
       Description: '"db" service discovery entry in Cloud Map'
@@ -296,14 +290,15 @@ Resources:
       NamespaceId:
         Ref: CloudMap
     Type: 'AWS::ServiceDiscovery::Service'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 4ed315ac-60ef-4da0-8edb-25568d0beeb0
+  SignetEFS:
+    Type: 'AWS::EFS::FileSystem'
+    Properties:
+      Encrypted: true
+      PerformanceMode: generalPurpose
   DbTaskDefinition:
     Properties:
       ContainerDefinitions:
         - Command:
-            - us-east-1.compute.internal
             - signetbroker.local
           Essential: false
           Image: 'docker/ecs-searchdomain-sidecar:1.0'
@@ -355,13 +350,11 @@ Resources:
               AccessPointId:
                 Ref: DbdataAccessPoint
               IAM: ENABLED
-            FilesystemId: fs-02ae06fe75888f14b
+            FilesystemId:
+              Ref: SignetEFS
             TransitEncryption: ENABLED
           Name: dbdata
     Type: 'AWS::ECS::TaskDefinition'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: d45d5e65-68ff-460b-bf18-e58512015358
   DbTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -376,15 +369,7 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
         - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly'
-      Tags:
-        - Key: com.docker.compose.project
-          Value: signetbroker
-        - Key: com.docker.compose.service
-          Value: db
     Type: 'AWS::IAM::Role'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 1268a8f7-5182-4040-a7d7-93e938c55e0b
   DbTaskRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -409,20 +394,10 @@ Resources:
                       Ref: DbdataAccessPoint
                 Effect: Allow
                 Principal: {}
-                Resource:
-                  - >-
-                    arn:aws:elasticfilesystem:us-east-1:750762926632:file-system/fs-02ae06fe75888f14b
+                Resource: '*'
             Version: 2012-10-17
           PolicyName: DbDbdataVolumeMountPolicy
-      Tags:
-        - Key: com.docker.compose.project
-          Value: signetbroker
-        - Key: com.docker.compose.service
-          Value: db
     Type: 'AWS::IAM::Role'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 1196ad08-c7bc-4323-8c76-f857a090e908
   DbdataAccessPoint:
     Properties:
       AccessPointTags:
@@ -432,21 +407,21 @@ Resources:
           Value: dbdata
         - Key: Name
           Value: signetbroker_dbdata
-      FileSystemId: fs-02ae06fe75888f14b
+      FileSystemId:
+        Ref: SignetEFS
     Type: 'AWS::EFS::AccessPoint'
     Metadata:
       'AWS::CloudFormation::Designer':
         id: b52e5cfc-bca7-4f93-8da2-36973fa68b61
-  DbdataNFSMountTargetOnSubnet08598e3e6a37dc941:
+  DbdataNFSMountTargetOnSignetSubnetA:
     Properties:
-      FileSystemId: fs-02ae06fe75888f14b
+      FileSystemId:
+        Ref: SignetEFS
       SecurityGroups:
         - Ref: AppnetworkNetwork
-      SubnetId: subnet-08598e3e6a37dc941
+      SubnetId:
+        Ref: SignetSubnetA
     Type: 'AWS::EFS::MountTarget'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: c5892d25-b7c3-4a63-bc53-4bc812a714f5
   LoadBalancer:
     Properties:
       LoadBalancerAttributes:
@@ -454,194 +429,10 @@ Resources:
           Value: 'true'
       Scheme: internet-facing
       Subnets:
-        - subnet-08598e3e6a37dc941
-      Tags:
-        - Key: com.docker.compose.project
-          Value: signetbroker
+        - Ref: SignetSubnetA
       Type: network
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 4fc9a2c8-1a47-4caa-a1e1-50f6635e1e67
   LogGroup:
     Properties:
-      LogGroupName: /docker-compose/signetbroker
+      LogGroupName: signetbroker
     Type: 'AWS::Logs::LogGroup'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: aff2f9eb-b494-4c6c-894c-bfc3b10da009
-Metadata:
-  'AWS::CloudFormation::Designer':
-    aff2f9eb-b494-4c6c-894c-bfc3b10da009:
-      size:
-        width: 150
-        height: 150
-      position:
-        x: 60
-        'y': 90
-      z: 1
-      embeds: []
-    4fc9a2c8-1a47-4caa-a1e1-50f6635e1e67:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 250
-        'y': 610
-      z: 1
-      embeds: []
-    b52e5cfc-bca7-4f93-8da2-36973fa68b61:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 540
-        'y': 150
-      z: 1
-      embeds: []
-    1196ad08-c7bc-4323-8c76-f857a090e908:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 540
-        'y': 60
-      z: 1
-      embeds: []
-    1268a8f7-5182-4040-a7d7-93e938c55e0b:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 710
-        'y': 150
-      z: 1
-      embeds: []
-    d45d5e65-68ff-460b-bf18-e58512015358:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 540
-        'y': 230
-      z: 1
-      embeds: []
-    3727ca55-6c54-4585-aacc-3af91469aaec:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 140
-        'y': 480
-      z: 1
-      embeds: []
-    27e9bb23-da4e-49cc-a101-cef5ab7d183c:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 390
-        'y': 340
-      z: 1
-      embeds: []
-    4ed315ac-60ef-4da0-8edb-25568d0beeb0:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 490
-        'y': 340
-      z: 1
-      embeds: []
-    6ca4c788-19d2-47f6-9e0e-c5fd3b617072:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 30
-        'y': 320
-      z: 1
-      embeds: []
-    240fe9ec-2cd4-464f-8004-093f2acd41af:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 140
-        'y': 270
-      z: 1
-      embeds: []
-    372a6f6a-c159-433e-8e4d-46ad6a54662d:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 310
-        'y': 540
-      z: 1
-      embeds: []
-    83f7f880-463d-46f0-823d-9ef8db8b691b:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 370
-        'y': 610
-      z: 1
-      embeds: []
-    698c2a18-e0f4-4c77-b60c-1f13fee84a97:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 290
-        'y': 340
-      z: 1
-      embeds: []
-    b31e0043-cc41-4eab-b389-7fb9ebd3bee7:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 720
-        'y': 280
-      z: 1
-      embeds: []
-    c5892d25-b7c3-4a63-bc53-4bc812a714f5:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 720
-        'y': 400
-      z: 1
-      embeds: []
-    49ebf349-6b1f-4bb1-82a2-5a147d5c16e4:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 540
-        'y': 480
-      z: 1
-      embeds: []
-      dependson:
-        - c5892d25-b7c3-4a63-bc53-4bc812a714f5
-    95dc3a98-62cf-45cf-b3c3-66d9302ebac8:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 140
-        'y': 370
-      z: 1
-      embeds: []
-      dependson:
-        - 83f7f880-463d-46f0-823d-9ef8db8b691b
-        - 49ebf349-6b1f-4bb1-82a2-5a147d5c16e4
-    638b6003-8ee1-48ca-a4aa-1b196a600515:
-      source:
-        id: b31e0043-cc41-4eab-b389-7fb9ebd3bee7
-      target:
-        id: b31e0043-cc41-4eab-b389-7fb9ebd3bee7
-      z: 1
