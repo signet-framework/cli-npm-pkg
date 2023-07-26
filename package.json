@@ -1,10 +1,9 @@
 {
   "name": "signet-cli",
-  "version": "0.7.5",
+  "version": "0.7.7",
   "description": "The command line interface for the Signet contract testing framework.",
   "scripts": {
-    "postinstall": "node postinstall.js install",
-    "preuninstall": "node postinstall.js uninstall"
+    "postinstall": "node postinstall.js install"
   },
   "author": "Signet",
   "license": "ISC",
@@ -24,5 +23,6 @@
     "dredd": "^14.1.0",
     "mkdirp": "^1.0.4",
     "mountebank": "^2.8.2"
-  }
+  },
+  "type": "module"
 }
