@@ -3,6 +3,7 @@
 "use strict";
 
 /*
+
 This script is adapted from an open source repository:
 https://github.com/sanathkr/go-npm
 
@@ -13,6 +14,7 @@ This Signet team refactored the script to add the following features:
 Inspiration was also derived from this article:
 https://blog.xendit.engineer/how-we-repurposed-npm-to-publish-and-distribute-our-go-binaries-for-internal-cli-23981b80911b
 for the purpose of pulling binaries from the npm package rather than github.
+
 */
 
 import { exec } from 'child_process';
@@ -130,32 +132,14 @@ function parsePackageJson() {
   };
 }
 
-let INVALID_INPUT = "Invalid inputs";
-async function install() {
-  const opts = parsePackageJson();
-  if (!opts) {
-    return INVALID_INPUT;
-  };
-  mkdirp.sync(opts.binPath);
-
-  console.log(`Copying the binary for ${process.platform}`);
-  const src = `./dist/${CURRENT_RELEASE_NAME}_${process.platform}_${ARCH_MAPPING[process.arch]}/${CURRENT_RELEASE_NAME}`;
-
-  await execCmdAsPromise(`cp ${src} ${opts.binPath}/${opts.binName}`);
-  await verifyAndPlaceBinary(opts.binName, opts.binPath);
-}
-
-async function uninstall(callback) {
-  const opts = parsePackageJson();
+async function placeUninstallScript() {
   const installationPath = await getInstallationPath();
 
-  fs.unlink(path.join(installationPath, opts.binName), (err) => {
+  fs.rename("./uninstall-signet-cli.cjs", path.join(installationPath, "uninstall-signet-cli"), (err) => {
     if (err) {
-      throw(new Error('Unable to remove binary from npm global executables directory'));
+      console.log("Info: Failed to install 'uninstall-signet-cli' script. You will need to manually remove the 'signet' binary from npm when uninstalling");
     }
   });
-
-  console.log("Uninstalled cli successfully");
 }
 
 function execCmdAsPromise(cmd) {
@@ -171,25 +155,26 @@ function execCmdAsPromise(cmd) {
   });
 }
 
-// Parse command line arguments and call the right method
-const actions = {
-  "install": install,
-  "uninstall": uninstall
-};
+let INVALID_INPUT = "package.json is missing required fields";
+async function install() {
+  const opts = parsePackageJson();
+  if (!opts) {
+    return INVALID_INPUT;
+  };
+  mkdirp.sync(opts.binPath);
 
-const argv = process.argv;
-if (argv && argv.length > 2) {
-  const cmd = process.argv[2];
+  console.log(`Copying the binary for ${process.platform}`);
+  const src = `./dist/${CURRENT_RELEASE_NAME}_${process.platform}_${ARCH_MAPPING[process.arch]}/${CURRENT_RELEASE_NAME}`;
 
-  if (!actions[cmd]) {
-    console.log("Invalid command. `install` and `uninstall` are the only supported commands");
-    process.exit(1);
-  }
+  await execCmdAsPromise(`cp ${src} ${opts.binPath}/${opts.binName}`);
+  await verifyAndPlaceBinary(opts.binName, opts.binPath);
 
-  try {
-    await actions[cmd]();
-  } catch (e) {
-    console.log(e);
-    process.exit(1);
-  }
+  await placeUninstallScript();
+}
+
+try {
+  await install();
+} catch (e) {
+  console.log(e);
+  process.exit(1);
 }
